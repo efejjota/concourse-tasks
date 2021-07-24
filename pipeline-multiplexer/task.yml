@@ -23,7 +23,7 @@ run:
       type: time
       source: { interval: ${timer} }
     jobs:
-    - name: dynamic-pipeline
+    - name: set-${name}
       plan:
       - get: timer
         trigger: true
