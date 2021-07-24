@@ -1,0 +1,42 @@
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: busybox
+
+inputs:
+- name: repository
+
+outputs:
+- name: generated
+
+run:
+  path: /bin/sh
+  args:
+  - -ec
+  - |
+    pipeline="$(base64 -w 0 "repository/${manifest}")"
+    cat <<EOF>generated/pipeline.yml
+    resources:
+    - name: timer
+      type: time
+      source: { interval: ${timer} }
+    jobs:
+    - name: dynamic-pipeline
+      plan:
+      - get: timer
+        trigger: true
+      - task: generate-pipeline
+        config:
+          platform: linux
+          image_resource: { type: registry-image, source: { repository: busybox }}
+          outputs: [{ name: generated }]
+          run:
+            path: /bin/sh
+            args: [ '-ec', 'echo "${pipeline}" | base64 -d > generated/pipeline.yml' ]
+
+      - set_pipeline: "${name}"
+        file: generated/pipeline.yml
+        vars: ${vars}
+    EOF
